@@ -61,8 +61,11 @@ enum SessionStatus {
 model User {
   id                String            @id @default(cuid())
   username          String            @unique
+  authEmail         String            @unique
   email             String?           @unique
-  passwordHash      String?
+  emailVerified     Boolean           @default(false)
+  name              String
+  image             String?
   firstName         String
   lastName          String
   phone             String?
@@ -74,12 +77,61 @@ model User {
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
 
+  authSessions        AuthSession[]
+  accounts            Account[]
   categoryMemberships CategoryMembership[]
   createdSessions     Session[]            @relation("SessionCreatedBy")
   attendanceRecords   AttendanceRecord[]   @relation("AttendanceUser")
   markedRecords       AttendanceRecord[]   @relation("AttendanceMarkedBy")
   attendanceAuditLogs AttendanceAuditLog[] @relation("AuditAttendanceUser")
   changedAuditLogs    AttendanceAuditLog[] @relation("AuditChangedBy")
+}
+
+model AuthSession {
+  id        String   @id @default(cuid())
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Account {
+  id                    String    @id @default(cuid())
+  accountId             String
+  providerId            String
+  userId                String
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([providerId, accountId])
+  @@index([userId])
+}
+
+model Verification {
+  id         String   @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
 }
 
 model Season {

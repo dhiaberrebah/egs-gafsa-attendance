@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { randomUUID } from "node:crypto";
 import { PrismaPg } from "@prisma/adapter-pg";
 import {
   AttendanceStatus,
@@ -13,6 +14,11 @@ import {
 import { argon2id, hash } from "argon2";
 
 const connectionString = process.env.DATABASE_URL;
+const productionSeedOverride = process.env.ALLOW_DEVELOPMENT_SEED === "I_UNDERSTAND_THIS_LOADS_FAKE_DATA";
+
+if (process.env.NODE_ENV === "production" && !productionSeedOverride) {
+  throw new Error("Development seed is disabled in production.");
+}
 
 if (!connectionString) {
   throw new Error("DATABASE_URL is required to seed the database.");
@@ -70,7 +76,7 @@ const playerUsers = [
 ];
 
 async function main() {
-  const passwordHash = await hash("DevOnly!2026", { type: argon2id });
+  const credentialHash = await hash("DevOnly!2026", { type: argon2id });
   const season = await prisma.season.upsert({
     where: { name: "2026/2027" },
     update: {
@@ -98,23 +104,48 @@ async function main() {
 
   const userByUsername = new Map<string, { id: string }>();
   for (const user of [...staffUsers, ...playerUsers]) {
+    const name = `${user.firstName} ${user.lastName}`;
+    const existingUser = await prisma.user.findUnique({
+      where: { username: user.username },
+      select: { id: true },
+    });
+    const userId = existingUser?.id ?? randomUUID();
+    const authEmail = `${userId}@auth.invalid`;
     const savedUser = await prisma.user.upsert({
       where: { username: user.username },
       update: {
+        authEmail,
+        name,
         firstName: user.firstName,
         lastName: user.lastName,
         role: user.role,
-        passwordHash,
         preferredLanguage: PreferredLanguage.FR,
         active: true,
       },
       create: {
+        id: userId,
         username: user.username,
+        authEmail,
+        name,
         firstName: user.firstName,
         lastName: user.lastName,
         role: user.role,
-        passwordHash,
         preferredLanguage: PreferredLanguage.FR,
+      },
+    });
+    await prisma.account.upsert({
+      where: {
+        providerId_accountId: {
+          providerId: "credential",
+          accountId: savedUser.id,
+        },
+      },
+      update: { password: credentialHash },
+      create: {
+        providerId: "credential",
+        accountId: savedUser.id,
+        userId: savedUser.id,
+        password: credentialHash,
       },
     });
     userByUsername.set(user.username, savedUser);
@@ -204,9 +235,9 @@ async function main() {
           data: {
             endsAt: input.endsAt,
             type: SessionType.TRAINING,
-            status: SessionStatus.SUBMITTED,
+            status: SessionStatus.DRAFT,
             location: input.location,
-            submittedAt: input.endsAt,
+            submittedAt: null,
           },
         })
       : await prisma.session.create({
@@ -217,9 +248,9 @@ async function main() {
             startsAt: input.startsAt,
             endsAt: input.endsAt,
             type: SessionType.TRAINING,
-            status: SessionStatus.SUBMITTED,
+            status: SessionStatus.DRAFT,
             location: input.location,
-            submittedAt: input.endsAt,
+            submittedAt: null,
           },
         });
 
