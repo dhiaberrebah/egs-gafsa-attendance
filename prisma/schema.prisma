@@ -1,0 +1,202 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  SUPER_ADMIN
+  ADMINISTRATION
+  COACH
+  DIRIGEANT
+  PLAYER
+}
+
+enum PreferredLanguage {
+  FR
+  AR
+}
+
+enum CategoryCode {
+  ECOLE_B
+  ECOLE_A
+  MINIME_B
+  MINIME_A
+  CADET_B
+  CADET_A
+  JUNIOR
+  ESPOIR_SENIOR_B
+}
+
+enum MembershipType {
+  PLAYER
+  COACH
+  DIRIGEANT
+}
+
+enum AttendanceStatus {
+  PRESENT
+  LATE
+  ABSENT
+  EXCUSED
+  INJURED
+}
+
+enum SessionType {
+  TRAINING
+  MATCH
+  MEETING
+  OTHER
+}
+
+enum SessionStatus {
+  DRAFT
+  SUBMITTED
+  LOCKED
+  CANCELLED
+}
+
+model User {
+  id                String            @id @default(cuid())
+  username          String            @unique
+  email             String?           @unique
+  passwordHash      String?
+  firstName         String
+  lastName          String
+  phone             String?
+  dateOfBirth       DateTime?
+  licenseNumber     String?           @unique
+  preferredLanguage PreferredLanguage @default(FR)
+  role              Role
+  active            Boolean           @default(true)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  categoryMemberships CategoryMembership[]
+  createdSessions     Session[]            @relation("SessionCreatedBy")
+  attendanceRecords   AttendanceRecord[]   @relation("AttendanceUser")
+  markedRecords       AttendanceRecord[]   @relation("AttendanceMarkedBy")
+  attendanceAuditLogs AttendanceAuditLog[] @relation("AuditAttendanceUser")
+  changedAuditLogs    AttendanceAuditLog[] @relation("AuditChangedBy")
+}
+
+model Season {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  startDate DateTime @db.Date
+  endDate   DateTime @db.Date
+  current   Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  categoryMemberships CategoryMembership[]
+  sessions            Session[]
+}
+
+model Category {
+  id           String       @id @default(cuid())
+  code         CategoryCode @unique
+  nameFr       String
+  nameAr       String
+  displayOrder Int
+  active       Boolean      @default(true)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  memberships CategoryMembership[]
+  sessions    Session[]
+}
+
+model CategoryMembership {
+  id             String         @id @default(cuid())
+  userId         String
+  categoryId     String
+  seasonId       String
+  membershipType MembershipType
+  startDate      DateTime       @db.Date
+  endDate        DateTime?      @db.Date
+  active         Boolean        @default(true)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Restrict)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  season   Season   @relation(fields: [seasonId], references: [id], onDelete: Restrict)
+
+  @@index([userId, seasonId])
+  @@index([categoryId, seasonId, membershipType])
+  @@index([userId, categoryId, active])
+}
+
+model Session {
+  id          String        @id @default(cuid())
+  categoryId  String
+  seasonId    String
+  createdById String
+  startsAt    DateTime
+  endsAt      DateTime?
+  type        SessionType
+  status      SessionStatus @default(DRAFT)
+  location    String?
+  notes       String?
+  submittedAt DateTime?
+  lockedAt    DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  category            Category             @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  season              Season               @relation(fields: [seasonId], references: [id], onDelete: Restrict)
+  createdBy           User                 @relation("SessionCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  attendanceRecords   AttendanceRecord[]
+  attendanceAuditLogs AttendanceAuditLog[]
+
+  @@index([categoryId, startsAt])
+  @@index([seasonId, status])
+}
+
+model AttendanceRecord {
+  id         String           @id @default(cuid())
+  sessionId  String
+  userId     String
+  status     AttendanceStatus
+  note       String?
+  markedById String
+  markedAt   DateTime         @default(now())
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+
+  session   Session              @relation(fields: [sessionId], references: [id], onDelete: Restrict)
+  user      User                 @relation("AttendanceUser", fields: [userId], references: [id], onDelete: Restrict)
+  markedBy  User                 @relation("AttendanceMarkedBy", fields: [markedById], references: [id], onDelete: Restrict)
+  auditLogs AttendanceAuditLog[]
+
+  @@unique([sessionId, userId])
+  @@index([userId])
+  @@index([markedById])
+}
+
+model AttendanceAuditLog {
+  id                 String           @id @default(cuid())
+  attendanceRecordId String
+  sessionId          String
+  userId             String
+  changedById        String
+  previousStatus     AttendanceStatus
+  newStatus          AttendanceStatus
+  previousNote       String?
+  newNote            String?
+  reason             String?
+  changedAt          DateTime         @default(now())
+
+  attendanceRecord AttendanceRecord @relation(fields: [attendanceRecordId], references: [id], onDelete: Restrict)
+  session          Session          @relation(fields: [sessionId], references: [id], onDelete: Restrict)
+  user             User             @relation("AuditAttendanceUser", fields: [userId], references: [id], onDelete: Restrict)
+  changedBy        User             @relation("AuditChangedBy", fields: [changedById], references: [id], onDelete: Restrict)
+
+  @@index([attendanceRecordId, changedAt])
+  @@index([sessionId, changedAt])
+  @@index([userId, changedAt])
+  @@index([changedById])
+}
