@@ -1,4 +1,4 @@
-import { AttendanceStatus } from "@prisma/client";
+import { AttendanceStatus } from "@/lib/domain";
 
 export type AttendanceSelection = Record<string, AttendanceStatus | undefined>;
 

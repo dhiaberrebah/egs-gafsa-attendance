@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { AttendanceStatus } from "@prisma/client";
+import { AttendanceStatus } from "@/lib/domain";
 import { correctAttendanceAction,type CorrectionActionState } from "@/app/app/sessions/[id]/attendance/actions";
 
 type Labels=Record<string,string>;

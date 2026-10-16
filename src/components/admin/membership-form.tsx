@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { MembershipType } from "@prisma/client";
+import { MembershipType } from "@/lib/domain";
 import { createMembershipAction,type MembershipState } from "@/app/app/memberships/actions";
 
 type Option={id:string;label:string};

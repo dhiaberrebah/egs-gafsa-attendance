@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { PreferredLanguage, Role } from "@prisma/client";
+import { PreferredLanguage, Role } from "@/lib/domain";
 import { createUserAction, updateUserAction, type UserActionState } from "@/app/app/users/actions";
 
 type UserValues = { id:string; firstName:string; lastName:string; username:string; role:Role; preferredLanguage:PreferredLanguage; email:string|null; phone:string|null; dateOfBirth:Date|null; licenseNumber:string|null; active:boolean };

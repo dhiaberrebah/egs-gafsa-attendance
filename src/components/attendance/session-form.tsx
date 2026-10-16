@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { SessionType } from "@prisma/client";
+import { SessionType } from "@/lib/domain";
 import { createSessionAction,type SessionActionState } from "@/app/app/sessions/actions";
 import { toClubDateTimeInput } from "@/lib/date-time";
 

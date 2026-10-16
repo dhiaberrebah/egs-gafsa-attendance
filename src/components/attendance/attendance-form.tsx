@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState,useMemo,useState } from "react";
-import { AttendanceStatus } from "@prisma/client";
+import { AttendanceStatus } from "@/lib/domain";
 import { attendanceAction,type AttendanceActionState } from "@/app/app/sessions/[id]/attendance/actions";
 import { countMarked,markAllPresent,type AttendanceSelection } from "@/lib/services/attendance-state";
 
