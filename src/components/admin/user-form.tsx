@@ -18,7 +18,7 @@ export function UserForm({ labels, roleLabels, languageLabels, roles, user }: Us
     ["licenseNumber", labels.license, "text", user?.licenseNumber],
   ] as const;
 
-  return <form action={formAction} className="space-y-5 rounded-xl bg-white p-5 shadow-sm">
+  return <form action={formAction} className="space-y-5 rounded-xl border border-egs-border bg-egs-surface p-5 shadow-sm">
     {user ? <input type="hidden" name="id" value={user.id} /> : null}
     <div className="grid gap-4 sm:grid-cols-2">{fields.map(([name,label,type,value]) => <label key={name} className="flex flex-col gap-1.5 text-sm font-medium">{label}<input name={name} type={type} defaultValue={value ?? ""} required={["firstName","lastName","username"].includes(name)} className="h-11 rounded-lg border border-zinc-300 px-3 font-normal" /></label>)}</div>
     <div className="grid gap-4 sm:grid-cols-2">
@@ -27,6 +27,6 @@ export function UserForm({ labels, roleLabels, languageLabels, roles, user }: Us
     </div>
     {!user ? <label className="flex flex-col gap-1.5 text-sm font-medium">{labels.password}<input name="password" type="password" minLength={8} required autoComplete="new-password" className="h-11 rounded-lg border border-zinc-300 px-3 font-normal" /></label> : <label className="flex items-center gap-2 text-sm font-medium"><input type="hidden" name="active" value="false" /><input name="active" type="checkbox" value="true" defaultChecked={user.active} />{labels.status}</label>}
     {state.error ? <p role="alert" className="text-sm text-red-700">{state.error === "duplicate" ? labels.duplicate : labels.invalid}</p> : null}
-    <button disabled={pending} className="min-h-11 rounded-lg bg-emerald-800 px-5 font-semibold text-white disabled:opacity-60">{user ? labels.update : labels.create}</button>
+    <button disabled={pending} className="min-h-11 rounded-lg bg-egs-green-800 px-5 font-semibold text-white disabled:opacity-60">{user ? labels.update : labels.create}</button>
   </form>;
 }

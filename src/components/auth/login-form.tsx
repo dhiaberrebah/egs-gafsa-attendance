@@ -46,7 +46,7 @@ export function LoginForm() {
           disabled={loading}
           aria-invalid={error}
           aria-describedby={error ? "login-error" : undefined}
-          className="h-12 rounded-lg border border-zinc-300 bg-white px-3 text-base outline-none focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/20 disabled:opacity-60"
+          className="h-12 rounded-lg border border-zinc-300 bg-white px-3 text-base outline-none focus:border-egs-green-700 focus:ring-2 focus:ring-egs-green-700/20 disabled:opacity-60"
         />
       </div>
       <div className="flex flex-col gap-2">
@@ -62,7 +62,7 @@ export function LoginForm() {
           disabled={loading}
           aria-invalid={error}
           aria-describedby={error ? "login-error" : undefined}
-          className="h-12 rounded-lg border border-zinc-300 bg-white px-3 text-base outline-none focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/20 disabled:opacity-60"
+          className="h-12 rounded-lg border border-zinc-300 bg-white px-3 text-base outline-none focus:border-egs-green-700 focus:ring-2 focus:ring-egs-green-700/20 disabled:opacity-60"
         />
       </div>
       {error ? (
@@ -73,7 +73,7 @@ export function LoginForm() {
       <button
         type="submit"
         disabled={loading}
-        className="h-12 rounded-lg bg-emerald-800 px-4 font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+        className="h-12 rounded-lg bg-egs-green-800 px-4 font-semibold text-white transition hover:bg-egs-green-700 disabled:cursor-not-allowed disabled:opacity-60"
       >
         {loading ? t("loading") : t("submit")}
       </button>
