@@ -73,9 +73,14 @@ export function LoginForm() {
       <button
         type="submit"
         disabled={loading}
-        className="h-12 rounded-lg bg-egs-green-800 px-4 font-semibold text-white transition hover:bg-egs-green-700 disabled:cursor-not-allowed disabled:opacity-60"
+        className="flex h-12 items-center justify-center gap-2 rounded-lg bg-egs-green-800 px-4 font-semibold text-white transition hover:bg-egs-green-700 disabled:cursor-not-allowed disabled:opacity-90"
       >
-        {loading ? t("loading") : t("submit")}
+        {loading ? (
+          <>
+            <span aria-hidden="true" className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+            {t("loading")}
+          </>
+        ) : t("submit")}
       </button>
     </form>
   );

@@ -81,7 +81,6 @@ export function AppShell({ user, locale, messages, children }: AppShellProps) {
               <Image src="/egs-gafsa-logo.png" alt="" width={30} height={38} className="h-[38px] w-[30px] shrink-0 object-contain md:hidden" />
               <div className="min-w-0">
                 <p className="truncate font-bold text-egs-green-900 md:hidden">{messages.Common.club}</p>
-                <p className="truncate text-sm text-zinc-600 md:hidden">{user.firstName} {user.lastName} · {messages.Roles[user.role]}</p>
                 <p className="hidden truncate text-sm font-semibold text-zinc-700 md:block">{user.firstName} {user.lastName} · {messages.Roles[user.role]}</p>
               </div>
             </div>
@@ -94,6 +93,7 @@ export function AppShell({ user, locale, messages, children }: AppShellProps) {
               <details className="relative md:hidden">
                 <summary className="cursor-pointer list-none rounded-lg border border-egs-border bg-white px-3 py-2 text-sm font-medium text-egs-green-900">{messages.Nav.menu}</summary>
                 <div className="absolute end-0 mt-2 w-52 rounded-xl border border-egs-border bg-egs-surface p-2 shadow-lg">
+                  <p className="truncate px-3 pb-2 pt-1 text-xs font-semibold text-zinc-600">{user.firstName} {user.lastName} · {messages.Roles[user.role]}</p>
                   <NavLinks items={items} labels={messages.Nav} variant="menu" />
                   <div className="mt-2 border-t border-egs-border pt-2"><LogoutButton label={messages.Auth.logout} locale={locale} /></div>
                 </div>
