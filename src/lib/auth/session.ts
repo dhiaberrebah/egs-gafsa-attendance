@@ -3,7 +3,8 @@ import "server-only";
 import { Role, type PreferredLanguage } from "@prisma/client";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
+import { auth, mobileAuth } from "@/lib/auth";
+import { canAuthenticateRole } from "@/lib/domain";
 import { prisma } from "@/lib/prisma";
 
 export type CurrentUser = {
@@ -23,15 +24,10 @@ export class AuthorizationError extends Error {
   }
 }
 
-export async function getCurrentUser(): Promise<CurrentUser | null> {
-  const session = await auth.api.getSession({ headers: await headers() });
-
-  if (!session?.user.id) {
-    return null;
-  }
-
-  return prisma.user.findFirst({
-    where: { id: session.user.id, active: true },
+async function getLoginUser(userId: string | undefined): Promise<CurrentUser | null> {
+  if (!userId) return null;
+  const user = await prisma.user.findFirst({
+    where: { id: userId, active: true },
     select: {
       id: true,
       username: true,
@@ -42,6 +38,25 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
       role: true,
     },
   });
+  return user && canAuthenticateRole(user.role) ? user : null;
+}
+
+export async function getCurrentUserFromHeaders(requestHeaders: Headers): Promise<CurrentUser | null> {
+  const session = await auth.api.getSession({ headers: requestHeaders });
+  if (!session?.user.id) {
+    return null;
+  }
+  return getLoginUser(session.user.id);
+}
+
+export async function getMobileUserFromHeaders(requestHeaders: Headers): Promise<CurrentUser | null> {
+  const session = await mobileAuth.api.getSession({ headers: requestHeaders });
+  if (!session?.user.id) return null;
+  return getLoginUser(session.user.id);
+}
+
+export async function getCurrentUser(): Promise<CurrentUser | null> {
+  return getCurrentUserFromHeaders(await headers());
 }
 
 export async function requireUser(): Promise<CurrentUser> {

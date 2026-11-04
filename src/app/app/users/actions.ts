@@ -6,7 +6,7 @@ import { ZodError } from "zod";
 import { requireAdministration } from "@/lib/admin/access";
 import { createUser, updateUser } from "@/lib/services/users";
 
-export type UserActionState = { error?: "invalid" | "duplicate" };
+export type UserActionState = { error?: "invalid" | "duplicate" | "credentialRequired" };
 
 function formValues(formData: FormData) {
   return Object.fromEntries(formData.entries());
@@ -19,6 +19,7 @@ export async function createUserAction(_: UserActionState, formData: FormData): 
   } catch (error) {
     if (error instanceof ZodError) return { error: "invalid" };
     if (error instanceof Error && error.message === "DUPLICATE_USER") return { error: "duplicate" };
+    if (error instanceof Error && error.message === "LOGIN_CREDENTIAL_REQUIRED") return { error: "credentialRequired" };
     throw error;
   }
   revalidatePath("/app/users");

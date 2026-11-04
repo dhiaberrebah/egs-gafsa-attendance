@@ -133,21 +133,23 @@ async function main() {
         preferredLanguage: PreferredLanguage.FR,
       },
     });
-    await prisma.account.upsert({
-      where: {
-        providerId_accountId: {
+    if (([Role.SUPER_ADMIN, Role.ADMINISTRATION, Role.COACH] as Role[]).includes(user.role as Role)) {
+      await prisma.account.upsert({
+        where: {
+          providerId_accountId: {
+            providerId: "credential",
+            accountId: savedUser.id,
+          },
+        },
+        update: { password: credentialHash },
+        create: {
           providerId: "credential",
           accountId: savedUser.id,
+          userId: savedUser.id,
+          password: credentialHash,
         },
-      },
-      update: { password: credentialHash },
-      create: {
-        providerId: "credential",
-        accountId: savedUser.id,
-        userId: savedUser.id,
-        password: credentialHash,
-      },
-    });
+      });
+    }
     userByUsername.set(user.username, savedUser);
   }
 

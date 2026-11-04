@@ -7,13 +7,14 @@ import { z } from "zod";
 import type { CurrentUser } from "@/lib/auth/session";
 import { AuthorizationError } from "@/lib/auth/session";
 import { canManageUsers } from "@/lib/admin/access";
+import { canAuthenticateRole } from "@/lib/domain";
 import { prisma } from "@/lib/prisma";
 
 const usernameSchema = z.string().trim().toLowerCase().min(3).max(30).regex(/^[a-z0-9_.]+$/);
 const optionalText = z.union([z.string().trim().min(1), z.literal("")]).transform((value) => value || null);
 const optionalDate = z.union([z.iso.date(), z.literal("")]).transform((value) => value ? new Date(`${value}T00:00:00.000Z`) : null);
 
-export const createUserSchema = z.object({
+const userFormSchema = z.object({
   firstName: z.string().trim().min(1).max(80),
   lastName: z.string().trim().min(1).max(80),
   username: usernameSchema,
@@ -23,10 +24,16 @@ export const createUserSchema = z.object({
   phone: optionalText,
   dateOfBirth: optionalDate,
   licenseNumber: optionalText,
-  password: z.string().min(8).max(128),
+  password: z.union([z.string().min(8).max(128), z.literal("")]).optional().transform((value) => value || undefined),
 });
 
-export const updateUserSchema = createUserSchema.omit({ password: true }).extend({
+export const createUserSchema = userFormSchema.superRefine((data, context) => {
+  if (canAuthenticateRole(data.role) && !data.password) {
+    context.addIssue({ code: "custom", path: ["password"], message: "PASSWORD_REQUIRED_FOR_LOGIN_ROLE" });
+  }
+});
+
+export const updateUserSchema = userFormSchema.omit({ password: true }).extend({
   id: z.string().min(1),
   active: z.enum(["true", "false"]).transform((value) => value === "true"),
 });
@@ -83,7 +90,9 @@ export async function createUser(actor: CurrentUser, input: unknown) {
   const duplicate = await prisma.user.findUnique({ where: { username: data.username }, select: { id: true } });
   if (duplicate) throw new Error("DUPLICATE_USER");
   const id = randomUUID();
-  const credentialHash = await hash(data.password, { type: argon2id });
+  const credentialHash = canAuthenticateRole(data.role) && data.password
+    ? await hash(data.password, { type: argon2id })
+    : undefined;
 
   try {
     return await prisma.$transaction(async (tx) => {
@@ -104,9 +113,11 @@ export async function createUser(actor: CurrentUser, input: unknown) {
         },
         select: { id: true, username: true },
       });
-      await tx.account.create({
-        data: { id: `credential:${id}`, providerId: "credential", accountId: id, userId: id, password: credentialHash },
-      });
+      if (credentialHash) {
+        await tx.account.create({
+          data: { id: `credential:${id}`, providerId: "credential", accountId: id, userId: id, password: credentialHash },
+        });
+      }
       return user;
     });
   } catch (error) {
@@ -119,29 +130,40 @@ export async function createUser(actor: CurrentUser, input: unknown) {
 
 export async function updateUser(actor: CurrentUser, input: unknown) {
   const data = updateUserSchema.parse(input);
-  const target = await prisma.user.findUnique({ where: { id: data.id }, select: { role: true } });
+  const target = await prisma.user.findUnique({
+    where: { id: data.id },
+    select: { role: true, accounts: { where: { providerId: "credential" }, select: { id: true }, take: 1 } },
+  });
   if (!target) throw new Error("USER_NOT_FOUND");
+  if (!canAuthenticateRole(target.role) && canAuthenticateRole(data.role) && target.accounts.length === 0) {
+    throw new Error("LOGIN_CREDENTIAL_REQUIRED");
+  }
   if (actor.role !== Role.SUPER_ADMIN && [target.role, data.role].some((role) => ([Role.SUPER_ADMIN, Role.ADMINISTRATION] as Role[]).includes(role))) {
     throw new AuthorizationError();
   }
   assertRoleAssignment(actor, data.role);
 
-  return prisma.user.update({
-    where: { id: data.id },
-    data: {
-      username: data.username,
-      name: `${data.firstName} ${data.lastName}`,
-      firstName: data.firstName,
-      lastName: data.lastName,
-      role: data.role,
-      preferredLanguage: data.preferredLanguage,
-      email: data.email,
-      phone: data.phone,
-      dateOfBirth: data.dateOfBirth,
-      licenseNumber: data.licenseNumber,
-      active: data.active,
-    },
-    select: { id: true },
+  return prisma.$transaction(async (tx) => {
+    if (canAuthenticateRole(target.role) && !canAuthenticateRole(data.role)) {
+      await tx.authSession.deleteMany({ where: { userId: data.id } });
+    }
+    return tx.user.update({
+      where: { id: data.id },
+      data: {
+        username: data.username,
+        name: `${data.firstName} ${data.lastName}`,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        role: data.role,
+        preferredLanguage: data.preferredLanguage,
+        email: data.email,
+        phone: data.phone,
+        dateOfBirth: data.dateOfBirth,
+        licenseNumber: data.licenseNumber,
+        active: data.active,
+      },
+      select: { id: true },
+    });
   });
 }
 

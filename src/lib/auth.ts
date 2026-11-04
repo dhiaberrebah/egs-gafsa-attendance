@@ -1,12 +1,30 @@
 import { argon2id, hash, verify } from "argon2";
-import { betterAuth } from "better-auth";
+import { betterAuth, type BetterAuthOptions } from "better-auth";
 import { APIError } from "better-auth/api";
 import { prismaAdapter } from "better-auth/adapters/prisma";
-import { username } from "better-auth/plugins";
+import { bearer, username } from "better-auth/plugins";
+import { Role } from "@prisma/client";
 import { env } from "@/lib/env";
+import { canAuthenticateRole } from "@/lib/domain";
 import { prisma } from "@/lib/prisma";
 
-export const auth = betterAuth({
+function sessionRoleGuard(isAllowed: (role: Role) => boolean) {
+  return async (session: { userId: string }) => {
+    const user = await prisma.user.findUnique({
+      where: { id: session.userId },
+      select: { active: true, role: true },
+    });
+
+    if (!user?.active || !isAllowed(user.role)) {
+      throw APIError.from("FORBIDDEN", {
+        message: "Account is inactive or is not allowed to sign in",
+        code: user?.active ? "ROLE_CANNOT_SIGN_IN" : "ACCOUNT_INACTIVE",
+      });
+    }
+  };
+}
+
+const commonOptions = {
   appName: "EGS Gafsa Attendance",
   baseURL: env.BETTER_AUTH_URL,
   secret: env.BETTER_AUTH_SECRET,
@@ -79,26 +97,36 @@ export const auth = betterAuth({
   databaseHooks: {
     session: {
       create: {
-        before: async (session) => {
-          const user = await prisma.user.findUnique({
-            where: { id: session.userId },
-            select: { active: true },
-          });
-
-          if (!user?.active) {
-            throw APIError.from("FORBIDDEN", {
-              message: "Account is inactive",
-              code: "ACCOUNT_INACTIVE",
-            });
-          }
-        },
+        before: sessionRoleGuard(canAuthenticateRole),
       },
     },
   },
   disabledPaths: ["/sign-up/email"],
+} satisfies BetterAuthOptions;
+
+export const auth = betterAuth({
+  ...commonOptions,
   plugins: [
     username({
       displayUsername: false,
     }),
+  ],
+});
+
+export const mobileAuth = betterAuth({
+  ...commonOptions,
+  basePath: "/api/mobile/auth",
+  databaseHooks: {
+    session: {
+      create: {
+        before: sessionRoleGuard((role) => role === Role.COACH),
+      },
+    },
+  },
+  plugins: [
+    username({
+      displayUsername: false,
+    }),
+    bearer({ requireSignature: true }),
   ],
 });

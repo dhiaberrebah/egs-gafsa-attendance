@@ -4,7 +4,7 @@ vi.mock("server-only", () => ({}));
 vi.mock("next/headers", () => ({ headers: vi.fn(async () => new Headers()) }));
 
 import { Role } from "@prisma/client";
-import { auth } from "@/lib/auth";
+import { auth, mobileAuth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import {
   canAccessCategory,
@@ -58,8 +58,6 @@ afterAll(async () => {
 
 describe("Better Auth credentials", () => {
   it("accepts correct seeded credentials and revokes the session on logout", async () => {
-    const user = await prisma.user.findUniqueOrThrow({ where: { username: "dev.coach.cadetsa" } });
-    const sessionsBefore = await prisma.authSession.count({ where: { userId: user.id } });
     const response = await auth.handler(
       authRequest("/sign-in/username", {
         username: "dev.coach.cadetsa",
@@ -71,11 +69,50 @@ describe("Better Auth credentials", () => {
     expect(response.headers.getSetCookie().some((value) => /httponly/i.test(value))).toBe(true);
     const cookie = responseCookie(response);
     expect(cookie).not.toBe("");
-    expect(await prisma.authSession.count({ where: { userId: user.id } })).toBe(sessionsBefore + 1);
 
     const logoutResponse = await auth.handler(authRequest("/sign-out", undefined, cookie));
     expect(logoutResponse.ok).toBe(true);
-    expect(await prisma.authSession.count({ where: { userId: user.id } })).toBe(sessionsBefore);
+    const sessionResponse = await auth.handler(new Request(`${baseUrl}/api/auth/get-session`, {
+      headers: { cookie },
+    }));
+    await expect(sessionResponse.json()).resolves.toBeNull();
+  });
+
+  it("issues a bearer session for the coach mobile client", async () => {
+    const response = await mobileAuth.handler(
+      new Request(`${baseUrl}/api/mobile/auth/sign-in/username`, {
+        method: "POST",
+        headers: { "content-type": "application/json", origin: baseUrl },
+        body: JSON.stringify({ username: "dev.coach.cadetsa", password: developmentPassword }),
+      }),
+    );
+    const token = response.headers.get("set-auth-token");
+
+    expect(response.ok).toBe(true);
+    expect(token).not.toBeNull();
+    const session = await mobileAuth.api.getSession({
+      headers: new Headers({ authorization: `Bearer ${token}` }),
+    });
+    expect(session?.user.username).toBe("dev.coach.cadetsa");
+
+    await mobileAuth.handler(new Request(`${baseUrl}/api/mobile/auth/sign-out`, {
+      method: "POST",
+      headers: { origin: baseUrl, authorization: `Bearer ${token}` },
+    }));
+  });
+
+  it("restricts the mobile sign-in endpoint to coaches", async () => {
+    const response = await mobileAuth.handler(
+      new Request(`${baseUrl}/api/mobile/auth/sign-in/username`, {
+        method: "POST",
+        headers: { "content-type": "application/json", origin: baseUrl },
+        body: JSON.stringify({ username: "dev.admin01", password: developmentPassword }),
+      }),
+    );
+
+    expect(response.status).toBe(403);
+    expect(response.headers.get("set-auth-token")).toBeNull();
+    expect(response.headers.getSetCookie()).toHaveLength(0);
   });
 
   it("rejects a wrong password without revealing account existence", async () => {
@@ -105,6 +142,20 @@ describe("Better Auth credentials", () => {
       await prisma.user.update({ where: { id: user.id }, data: { active: true } });
     }
   });
+
+  it.each(["dev.player.cadetsa01", "dev.dirigeant.cadetsa"])(
+    "does not allow roster-only account %s to sign in",
+    async (username) => {
+      const user = await prisma.user.findUniqueOrThrow({ where: { username } });
+      const sessionsBefore = await prisma.authSession.count({ where: { userId: user.id } });
+      const response = await auth.handler(
+        authRequest("/sign-in/username", { username, password: developmentPassword }),
+      );
+
+      expect(response.ok).toBe(false);
+      expect(await prisma.authSession.count({ where: { userId: user.id } })).toBe(sessionsBefore);
+    },
+  );
 
   it("returns no session for an anonymous request", async () => {
     const response = await auth.handler(new Request(`${baseUrl}/api/auth/get-session`));
