@@ -10,6 +10,11 @@
     "test": "vitest run",
     "postinstall": "prisma generate"
   },
+  "postcss": {
+    "plugins": {
+      "@tailwindcss/postcss": {}
+    }
+  },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "^7.10.0",
@@ -23,6 +28,7 @@
     "zod": "4.6.5"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "4.3.3",
     "@tailwindcss/turbopack": "^4",
     "@types/node": "24.19.2",
     "@types/pg": "^8.23.1",
