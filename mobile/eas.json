@@ -1,0 +1,16 @@
+{
+  "cli": {
+    "appVersionSource": "local"
+  },
+  "build": {
+    "preview": {
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://egs-gafsa-attendance.vercel.app"
+      },
+      "android": {
+        "buildType": "apk"
+      }
+    }
+  }
+}

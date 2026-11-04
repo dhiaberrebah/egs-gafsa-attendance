@@ -51,6 +51,10 @@ npm test
 npm run build
 ```
 
+## Coach mobile app
+
+The Expo React Native app lives in `mobile/` and uses the same Next.js backend. Coaches sign in with their staff credentials, view assigned sessions, and submit attendance; administration continues to use the web app. See [`mobile/README.md`](mobile/README.md) for setup and device-specific API URLs.
+
 ## Production
 
 Required server environment variables:

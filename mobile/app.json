@@ -1,0 +1,46 @@
+{
+  "expo": {
+    "name": "EGS Gafsa Coach",
+    "slug": "egs-gafsa-coach",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "egs-gafsa-coach",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "tn.egsgafsa.coach"
+    },
+    "android": {
+      "package": "tn.egsgafsa.coach",
+      "adaptiveIcon": {
+        "backgroundColor": "#143D2B",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "asyncRoutes": {
+          "web": true
+        }
+      },
+      "eas": {
+        "projectId": "0d5d64fc-8916-4c7b-8be6-3521e611b8e3"
+      }
+    },
+    "owner": "glayouuu"
+  }
+}

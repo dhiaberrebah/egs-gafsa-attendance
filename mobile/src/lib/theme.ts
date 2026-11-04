@@ -1,0 +1,18 @@
+export const colors = {
+  forest: "#143D2B",
+  forestDeep: "#0B2B1D",
+  green: "#246642",
+  greenWash: "#E7F0E9",
+  yellow: "#F2C14E",
+  paper: "#F6F2E7",
+  card: "#FFFFFF",
+  ink: "#17211B",
+  muted: "#6B756D",
+  border: "#E2DDCF",
+  red: "#A83E3E",
+  redWash: "#F9E8E6",
+  orange: "#A85E20",
+  orangeWash: "#F8EBDD",
+  slate: "#687580",
+  slateWash: "#EDF0F2",
+};
