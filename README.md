@@ -19,6 +19,20 @@ An application for managing staff attendance and training sessions, with a web i
 | Database | PostgreSQL |
 | Database access | Prisma |
 | Authentication | Better Auth |
+ 
+## Screenshots
+
+### Public Landing Page
+<img width="1911" height="912" alt="ChatGPT Image Nov 8, 2026, 06_40_11 PM" src="https://github.com/user-attachments/assets/13ebfa0e-6bbc-4ba8-bbf3-8fed6343cbb8" />
+
+### Dashboard — French
+<img width="1915" height="902" alt="6900c6a2-7ebd-4c3d-b49e-ccd3040a14ac" src="https://github.com/user-attachments/assets/d2754d50-e7ce-4714-8b03-8b056eb98284" />
+
+### Dashboard — Arabic
+<img width="1906" height="910" alt="297b453a-27bb-46b7-b6fe-90dea4eae7b7" src="https://github.com/user-attachments/assets/7cedf9c0-bb4c-43e5-a767-eb5570e65222" />
+
+### Categories
+<img width="1918" height="911" alt="372f281c-9500-4b3c-aef1-d733c458093a" src="https://github.com/user-attachments/assets/40d3018a-75ef-464b-9690-d425955b40c5" />
 
 ## Development
 
